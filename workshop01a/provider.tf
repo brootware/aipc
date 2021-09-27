@@ -3,7 +3,7 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "~> 2.0"
+      version = "2.12.0"
     }
   }
 }
@@ -11,7 +11,8 @@ terraform {
 # Set the variable value in *.tfvars file
 # or using -var="do_token=..." CLI option
 variable "do_token" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 # Configure the DigitalOcean Provider
