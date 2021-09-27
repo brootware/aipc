@@ -1,31 +1,30 @@
-variable "image_name" {
-  type = string
+variable "dov_bear" {
+  type = object({
+    image_name     = string
+    container_port = number
+  })
 }
 
-variable "container_name" {
-  type    = string
-  default = "c0"
-}
-
-variable "container_port" {
+variable "instances" {
   type    = number
-  default = 3000
+  default = 5
 }
 
-variable "exposed_port" {
+variable "base_external_port" {
   type    = number
   default = 8080
 }
 
 resource "docker_image" "fortune" {
-  name = var.image_name
+  name = var.dov_bear.image_name
 }
 
 resource "docker_container" "fortune" {
-  name  = var.container_name
+  count = var.instances
+  name  = "f${count.index}"
   image = docker_image.fortune.latest
   ports {
-    internal = var.container_port
-    external = var.exposed_port
+    internal = var.dov_bear.container_port
+    external = var.base_external_port + count.index
   }
 }
