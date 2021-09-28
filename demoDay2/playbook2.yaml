@@ -1,5 +1,5 @@
 ---
-- name: Download
+- name: Install TF and packer
   hosts: all
   become: yes
   vars:
