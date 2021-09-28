@@ -9,12 +9,20 @@
       - https://releases.hashicorp.com/packer/1.7.5/packer_1.7.5_linux_amd64.zip
     tmp_dir: /opt/tmp
     bin_dir: /usr/local/bin
+
   tasks:
+    - name: Create /opt/tmp
+      file:
+        path: /opt/tmp
+        state: directory
+        mode: 0755
+
     - name: Download Files using get_url
       get_url:
         url: "{{ item }}"
         dest: "{{ tmp_dir }}"
       with_items: "{{ download_files }}"
+
     - name: Unpack All Files to Dest
       unarchive:
         src: "{{ item.src }}"
