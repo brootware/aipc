@@ -11,6 +11,12 @@
     bin_dir: /usr/local/bin
 
   tasks:
+    - name: Install Unzip
+      package:
+        update_cache: yes
+        name: unzip
+        state: present
+
     - name: Create /opt/tmp
       file:
         path: "{{ tmp_dir }}"
