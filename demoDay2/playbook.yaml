@@ -1,0 +1,19 @@
+---
+- name: Install packages
+  hosts: all
+  tasks:
+    - name: Install packages
+      package:
+        state: present
+        name:
+          - nginx
+          - python3-pip
+          - build-essential
+          - libssl-dev
+          - libffi-dev
+          - python3-dev
+    - name: start nginx
+      service:
+        name: nginx
+        enabled: yes
+        state: started

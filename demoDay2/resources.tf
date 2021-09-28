@@ -21,6 +21,13 @@ resource "digitalocean_droplet" "myserver" {
   ssh_keys = [data.digitalocean_ssh_key.aipc.id]
 }
 
+resource "local_file" "inventory" {
+  filename        = "inventory.yaml"
+  file_permission = "0444"
+  content = templatefile("inventory.yaml.tpl", {
+    droplets = digitalocean_droplet.myserver
+  })
+}
 output "myserver_ip" {
   value = { for d in digitalocean_droplet.myserver : d.name => d.ipv4_address }
 }
