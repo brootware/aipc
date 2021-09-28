@@ -30,13 +30,15 @@ resource "digitalocean_droplet" "my-droplet" {
     type        = "ssh"
     user        = "root"
     host        = self.ipv4_address
-    private_key = file("../keys/aipc")
+    private_key = file("../keys/mykey")
   }
 
   provisioner "remote-exec" {
     inline = [
       "sudo apt update",
-      "sudo apt install -y nginx"
+      "sudo apt install -y nginx",
+      "sudo systemctl enable nginx",
+      "sudo systemctl start nginx"
     ]
   }
 }
