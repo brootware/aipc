@@ -3,3 +3,4 @@
 terraform.*
 .DS_Store
 keys/*
+s3-backend.hcl

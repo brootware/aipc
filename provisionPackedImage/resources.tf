@@ -18,3 +18,7 @@ resource "digitalocean_droplet" "yoursql" {
   size     = "s-1vcpu-1gb"
   ssh_keys = [data.digitalocean_ssh_key.aipc.id]
 }
+
+output "yoursql_ip" {
+  value = digitalocean_droplet.yoursql.ipv4_address
+}
