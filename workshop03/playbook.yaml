@@ -1,0 +1,131 @@
+---
+- name: Install MySQL
+  hosts: all
+  become: yes
+  vars:
+    packages: ["unzip", "libaio1", "libtinfo5"]
+    mysql_url: "https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.26-linux-glibc2.12-x86_64.tar.xz"
+    download_dir: "/usr/local/opt"
+    mysql_checksum: "md5:100a0e9336ef106a5fe90e6803b57066"
+    mysql_file: "mysql-8.0.26-linux-glibc2.12-x86_64"
+    mysql_base_dir: "/usr/local/opt/mysql"
+  tasks:
+    - name: Install the following packages - unzip, libaio1, libtinfo5
+      package:
+        update_cache: yes
+        state: present
+        name: "{{ item }}"
+      loop: "{{ packages }}"
+      register: result
+      until: result is not failed
+      retries: 3
+      delay: 5
+
+    - name: Create a group called mysql
+      group:
+        name: mysql
+        state: present
+
+    - name: Create a user called mysql add it to the groups - sudo, mysql
+      user:
+        name: mysql
+        state: present
+        groups: ["sudo", "mysql"]
+        append: yes
+
+    - name: Create a directory in /usr/local/opt
+      file:
+        path: "{{ download_dir }}"
+        state: directory
+        mode: 0755
+
+    - name: Check if MySQL is downloaded
+      stat:
+        path: "{{ download_dir }}/{{ mysql_file }}.tar.xz"
+      register: file
+
+    - name: Download MySQL Community Edition
+      get_url:
+        url: "{{ mysql_url }}"
+        dest: "{{ download_dir }}"
+        checksum: "{{ mysql_checksum }}"
+      when: not file.stat.exists
+
+    - name: Unzip the archive into /urs/local/opt -> /usr/local/opt/mysql/mysql-8.0.26-linux-glibc2.12-i686
+      unarchive:
+        remote_src: true
+        src: "{{ download_dir }}/{{ mysql_file }}.tar.xz"
+        dest: "{{ download_dir }}"
+        creates: "{{ download_dir }}/{{ mysql_file }}"
+
+    - name: change all the files under /usr/local/opt to be owned by mysql, group = mysql
+      file:
+        path: "{{ download_dir }}"
+        owner: mysql
+        group: mysql
+        recurse: yes
+
+    - name: Create a symlink to mysql
+      file:
+        src: "{{ download_dir }}/{{ mysql_file }}"
+        dest: "{{ download_dir }}/mysql"
+        owner: mysql
+        group: mysql
+        state: link
+
+    - name: Create a symlink to /usr/local/bin for mysql
+      file:
+        src: "{{ download_dir }}/{{ mysql_file }}/bin/mysql"
+        dest: "/usr/local/bin/mysql"
+        state: link
+
+    - name: Generate my.cnf in /etc/my.cnf
+      template:
+        dest: /etc/my.cnf
+        src: ./mycnf.j2
+
+    - name: Initialize mysql
+      command:
+        chdir: "{{ mysql_base_dir }}"
+        argv: ["bin/mysqld", "--initialize", "--user=mysql"]
+        creates: /var/lib/mysql
+      register: output
+
+      # QPCxlsg0gF(m
+    - name: dump mysql initialization - all
+      debug:
+        msg: "{{ output }}"
+
+    - name: Extract out the random password
+      set_fact:
+        generated_password: "{{ output.stderr_lines[-1].split(':')[-1] | trim }}"
+
+    - name: Show password
+      debug:
+        msg: "{{ generated_password }}"
+
+    - name: Generate the service file
+      template:
+        dest: /lib/systemd/system/mysql.service
+        src: ./mysql.service.j2
+        mode: 0644
+
+    - name: Enable and start MySQL
+      systemd:
+        name: mysql
+        enabled: true
+        state: started
+        daemon_reload: yes
+
+    - name: Generate the SQL script to change the root password
+      template:
+        src: ./change_root_password.sql.j2
+        dest: "{{ download_dir }}/change_root_password.sql"
+        mode: 0400
+
+    - name: Change the root password
+      shell:
+        chdir: "{{ download_dir }}/mysql"
+        cmd: "bin/mysql -uroot -p'{{ generated_password }}' --connect-expired-password < {{ download_dir }}/change_root_password.sql"
+    # - name: Run mysql command to change password
+    # - name:
